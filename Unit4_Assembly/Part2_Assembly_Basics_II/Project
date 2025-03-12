@@ -1,0 +1,82 @@
+section .data
+    prompt db "Enter your favorite number: ", 0  ; Prompt message for user input
+    start_msg db "Starting number: %d", 10, 0   ; Message to print the entered number
+    times10_msg db "Number * 10: %d", 10, 0     ; Message for number * 10
+    times72_msg db "Number * 72: %d", 10, 0     ; Message for number * 72
+    times81_msg db "Number * 81: %d", 10, 0     ; Message for number * 81
+    format db "%d", 0                           ; Format string for scanf and printf
+
+section .bss
+    number resd 1      ; Reserve space for the input number (4 bytes)
+
+section .text
+    global _main
+    extern _printf      ; Declare printf function from C standard library
+    extern _scanf       ; Declare scanf function from C standard library
+
+_main:
+    push ebp           ; Save old base pointer (setting up stack frame)
+    mov ebp, esp       ; Set base pointer for the stack frame
+    sub esp, 16        ; Allocate extra space for stack alignment (required for macOS)
+
+    ; Print prompt message
+    push prompt        ; Push the address of the prompt message
+    call _printf       ; Call printf function
+    add esp, 4         ; Clean up the stack after the call
+
+    ; Read user input into 'number' variable
+    push number        ; Push address of number to store user input
+    push format        ; Push format specifier "%d"
+    call _scanf        ; Call scanf function
+    add esp, 8         ; Clean up stack
+
+    ; Print the starting number
+    mov eax, [number]  ; Move input value to eax
+    push eax           ; Push value onto stack for printf
+    push start_msg     ; Push message onto stack for printf
+    call _printf       ; Call printf function
+    add esp, 8         ; Clean up stack
+
+    ; Calculate number * 10 using bitwise shift and addition
+    mov eax, [number]  ; Load input number into eax
+    mov ebx, eax       ; Copy value to ebx
+    shl eax, 3         ; Multiply by 8 (equivalent to num * 2^3)
+    add eax, ebx       ; Add original number (now *9)
+    add eax, ebx       ; Add original number again (now *10)
+    push eax           ; Push result onto stack
+    push times10_msg   ; Push message onto stack
+    call _printf       ; Call printf function
+    add esp, 8         ; Clean up stack
+
+    ; Calculate number * 72 using bitwise shift and subtraction
+    mov eax, [number]  ; Load input number into eax
+    mov ebx, eax       ; Copy value to ebx
+    shl eax, 6         ; Multiply by 64 (num * 2^6)
+    add eax, ebx       ; Add original number (*65)
+    mov ebx, [number]  ; Reload input number into ebx
+    shl ebx, 3         ; Multiply by 8 (num * 2^3)
+    sub eax, ebx       ; Subtract *8, so result is *72
+    push eax           ; Push result onto stack
+    push times72_msg   ; Push message onto stack
+    call _printf       ; Call printf function
+    add esp, 8         ; Clean up stack
+
+    ; Calculate number * 81 using bitwise shift and subtraction
+    mov eax, [number]  ; Load input number into eax
+    mov ebx, eax       ; Copy value to ebx
+    shl eax, 6         ; Multiply by 64 (*64)
+    add eax, ebx       ; Add original (*65)
+    mov ebx, eax       ; Store *65 in ebx
+    shr ebx, 1         ; Divide by 2 (*32.5, but since it's integer math, it becomes *32)
+    shl ebx, 1         ; Multiply by 2 again (*32)
+    sub eax, ebx       ; *65 - *32 = *81
+    push eax           ; Push result onto stack
+    push times81_msg   ; Push message onto stack
+    call _printf       ; Call printf function
+    add esp, 8         ; Clean up stack
+
+    ; Exit program
+    mov esp, ebp       ; Restore stack pointer
+    pop ebp            ; Restore base pointer
+    xor eax, eax       ; Set return value to 0
+    ret               ; Return from function
